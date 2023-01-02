@@ -69,7 +69,7 @@ public class RedisStorage extends SqlStorage implements IStorage {
 	}
 
 	public void setSecretVoteCount(int i) {
-		this.voteCount = 0;
+		this.voteCount = i;
 	}
 
 }

@@ -1,7 +1,6 @@
 package fr.maxlego08.zvoteparty.loader;
 
 import java.util.List;
-import java.util.Optional;
 
 import com.cryptomorin.xseries.XSound;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -47,6 +46,7 @@ public class ButtonLoader extends ZUtils implements Loader<Button> {
 			type = ButtonType.from(configuration.getString(path + "type"), (String) args[0], path + "type");
 		} catch (ButtonTypeException e1) {
 			e1.printStackTrace();
+			return null;
 		}
 
 		int slot = configuration.getInt(path + "slot");
@@ -77,13 +77,18 @@ public class ButtonLoader extends ZUtils implements Loader<Button> {
 
 		// Sound
 
-		Optional<XSound> optional = XSound.matchXSound(configuration.getString(path + "sound", null));
-		XSound xSound = optional.isPresent() ? optional.get() : null;
+		final String s = configuration.getString(path + "sound", null);
+		final XSound xSound;
+		if (s == null || s.isEmpty()) {
+			xSound = null;
+		} else {
+			xSound = XSound.matchXSound(s).orElse(null);
+		}
 
 		SoundOption sound = null;
-		if (optional.isPresent()) {
-			float pitch = Float.valueOf(configuration.getString(path + "pitch", "1.0f"));
-			float volume = Float.valueOf(configuration.getString(path + "volume", "1.0f"));
+		if (xSound != null) {
+			float pitch = Float.parseFloat(configuration.getString(path + "pitch", "1.0f"));
+			float volume = Float.parseFloat(configuration.getString(path + "volume", "1.0f"));
 			sound = new ZSoundOption(xSound, pitch, volume);
 		}
 
