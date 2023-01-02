@@ -1,0 +1,58 @@
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+}
+
+processResources {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    from(sourceSets.main.resources.srcDirs) {
+        include 'plugin.yml'
+        expand(project.properties)
+    }
+}
+
+repositories {
+    maven { url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
+    maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+    maven { url 'https://oss.sonatype.org/content/repositories/central' }
+    maven { url 'https://papermc.io/repo/repository/maven-public/' }
+    maven { url 'https://repo.extendedclip.com/content/repositories/placeholderapi/' }
+    maven { url 'https://jitpack.io' }
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly 'org.spigotmc:spigot-api:1.19.2-R0.1-SNAPSHOT'
+    compileOnly 'com.mojang:authlib:1.5.26'
+
+    compileOnly 'me.clip:placeholderapi:2.11.2'
+    compileOnly 'com.github.NuVotifier.NuVotifier:nuvotifier-api:2.7.2'
+    compileOnly 'com.github.NuVotifier.NuVotifier:nuvotifier-bukkit:2.7.2'
+
+    implementation 'com.github.cryptomorin:XSeries:9.2.0'
+    implementation ('redis.clients:jedis:4.2.3') {
+        exclude group: 'com.google.code.gson'
+    }
+    implementation 'org.slf4j:slf4j-nop:1.7.32'
+
+    compileOnly 'org.jetbrains:annotations:23.0.0'
+}
+
+compileJava {
+    options.release = 8
+    options.encoding = 'UTF-8'
+}
+
+jar {
+    enabled = false
+    dependsOn (shadowJar)
+}
+
+shadowJar {
+    archiveClassifier.set('')
+    relocate 'com.cryptomorin.xseries', project.group + '.lib.xseries'
+    relocate 'org.apache.commons.pool2', project.group + '.lib.pool2'
+    relocate 'org.json', project.group + '.lib.json'
+    relocate 'org.slf4j', project.group + '.lib.slf4j'
+    relocate 'redis.clients.jedis', project.group + '.lib.jedis'
+}
