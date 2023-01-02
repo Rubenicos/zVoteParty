@@ -9,24 +9,27 @@ import redis.clients.jedis.Protocol;
 
 public class RedisClient {
 	
-	private JedisPool jedis;
+	private final JedisPool pool;
 
 	public RedisClient() {
 		RedisConfiguration config = Config.redis;
 
-		this.jedis = config.getPassword() != null
-				? new JedisPool(buildPoolConfig(config), config.getHost(), config.getPort(), Protocol.DEFAULT_TIMEOUT,
-						config.getPassword())
+		this.pool = config.getPassword() != null
+				? new JedisPool(buildPoolConfig(config), config.getHost(), config.getPort(), Protocol.DEFAULT_TIMEOUT, config.getPassword())
 				: new JedisPool(buildPoolConfig(config), config.getHost(), config.getPort());
 
 	}
 
-	public Jedis getPool() {
-		Jedis jedis = this.jedis.getResource();
+	public JedisPool getPool() {
+		return pool;
+	}
 
-		RedisConfiguration config = Config.redis;
-		if (config.getDatabaseIndex() != 0) {
-			jedis.select(config.getDatabaseIndex());
+	public Jedis getResource() {
+		final Jedis jedis = this.pool.getResource();
+
+		final int index = Config.redis.getDatabaseIndex();
+		if (index != 0) {
+			jedis.select(index);
 		}
 
 		return jedis;

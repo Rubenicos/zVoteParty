@@ -15,22 +15,23 @@ import fr.maxlego08.zvoteparty.save.Config;
 import fr.maxlego08.zvoteparty.storage.storages.RedisStorage;
 import fr.maxlego08.zvoteparty.zcore.logger.Logger;
 import fr.maxlego08.zvoteparty.zcore.logger.Logger.LogType;
+import org.intellij.lang.annotations.Language;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPubSub;
 
 public class ServerMessaging extends JedisPubSub {
 
-	private final String SEPARATOR = ";;";
+	private static final @Language("RegExp") String SEPARATOR = ";;";
 
 	private final ZVotePartyPlugin plugin;
 	private final RedisStorage storage;
 	private final RedisClient client;
 
-	private Thread threadMessaging1;
+	private final Thread threadMessaging1;
+	boolean enabled = true;
 
-	private List<UUID> sendingUUID = new ArrayList<UUID>();
-
-	private Map<UUID, RedisVoteResponse> voteResponses = new HashMap<UUID, RedisVoteResponse>();
+	private final List<UUID> sendingUUID = new ArrayList<>();
+	private final Map<UUID, RedisVoteResponse> voteResponses = new HashMap<>();
 
 	/**
 	 * @param plugin
@@ -44,10 +45,39 @@ public class ServerMessaging extends JedisPubSub {
 		this.client = client;
 
 		this.threadMessaging1 = new Thread(() -> {
-			try (Jedis jedis = client.getPool()) {
-				jedis.subscribe(this, Config.redisChannel);
-			} catch (Exception e) {
-				e.printStackTrace();
+			boolean reconnected = false;
+			while (enabled && !Thread.interrupted() && this.client.getPool() != null && !this.client.getPool().isClosed()) {
+				try (Jedis jedis = this.client.getResource()) {
+					if (reconnected) {
+						Logger.info("Redis connection is alive again", Logger.LogType.SUCCESS);
+					}
+					// Lock the thread
+					jedis.subscribe(this, Config.redisChannel);
+				} catch (Throwable t) {
+					// Thread was unlocked after error
+					if (enabled) {
+						if (reconnected) {
+							Logger.info("Redis connection dropped, automatic reconnection in 8 seconds...", Logger.LogType.WARNING);
+							t.printStackTrace();
+						}
+						try {
+							this.unsubscribe(Config.redisChannel);
+						} catch (Throwable ignored) { }
+
+						// Make an instant subscribe if occurs any error on initialization
+						if (!reconnected) {
+							reconnected = true;
+						} else {
+							try {
+								Thread.sleep(8000);
+							} catch (InterruptedException e) {
+								Thread.currentThread().interrupt();
+							}
+						}
+					} else {
+						return;
+					}
+				}
 			}
 		});
 		this.threadMessaging1.start();
@@ -61,50 +91,54 @@ public class ServerMessaging extends JedisPubSub {
 		}
 
 		try {
-
 			if (channel.equals(Config.redisChannel)) {
 
-				String[] values = message.split(this.SEPARATOR);
+				final String[] values = message.split(SEPARATOR);
+				if (values.length < 2) {
+					return;
+				}
 
-				RedisSubChannel subChannel = RedisSubChannel.byName(values[0]);
-				String uuidAsString = values[1];
-				UUID uuid = UUID.fromString(uuidAsString);
+				final UUID uuid = UUID.fromString(values[1]);
 
 				// Allows to verify that the server sending the information does
 				// not receive it.
-
 				if (this.sendingUUID.contains(uuid)) {
 					this.sendingUUID.remove(uuid);
 					return;
 				}
 
-				switch (subChannel) {
-				case ADD_VOTEPARTY:
-					this.storage.addSecretVoteCount(1);
-					break;
-				case HANDLE_VOTEPARTY:
-					this.storage.setSecretVoteCount(0);
-					this.plugin.getManager().secretStart();
-					break;
-				case ADD_VOTE:
-					String username = values[2];
-					String serviceName = values[3];
-					if (!this.plugin.getManager().secretVote(username, serviceName)) {
-						this.handleVoteResponseError(uuid, username, serviceName);
-					} else {
-						this.handleVoteResponse(uuid, true, null);
-					}
-					break;
-				case VOTE_RESPONSE:
-					UUID messageId = UUID.fromString(values[2]);
-					boolean isSuccess = Boolean.valueOf(values[3]);
-					String userId = values[4];
-					this.processResponse(messageId, isSuccess, userId);
-					break;
-				default:
-					break;
+				switch (RedisSubChannel.byName(values[0])) {
+					case ADD_VOTEPARTY:
+						this.storage.addSecretVoteCount(1);
+						break;
+					case HANDLE_VOTEPARTY:
+						this.storage.setSecretVoteCount(0);
+						this.plugin.getManager().secretStart();
+						break;
+					case ADD_VOTE:
+						if (values.length < 4) {
+							return;
+						}
+						String username = values[2];
+						String serviceName = values[3];
+						if (!this.plugin.getManager().secretVote(username, serviceName)) {
+							this.handleVoteResponseError(uuid, username, serviceName);
+						} else {
+							this.handleVoteResponse(uuid, true, null);
+						}
+						break;
+					case VOTE_RESPONSE:
+						if (values.length < 5) {
+							return;
+						}
+						UUID messageId = UUID.fromString(values[2]);
+						boolean isSuccess = Boolean.parseBoolean(values[3]);
+						String userId = values[4];
+						this.processResponse(messageId, isSuccess, userId);
+						break;
+					default:
+						break;
 				}
-
 			}
 
 		} catch (Exception e) {
@@ -112,43 +146,69 @@ public class ServerMessaging extends JedisPubSub {
 		}
 	}
 
+	@Override
+	public void onSubscribe(String channel, int subscribedChannels) {
+		Logger.info("zVoteParty subscribed to the redis channel \"" + channel + '"');
+	}
+
+	@Override
+	public void onUnsubscribe(String channel, int subscribedChannels) {
+		Logger.info("zVoteParty unsubscribed to the redis channel \"" + channel + '"');
+	}
+
 	/**
 	 * Allows you to send a message
 	 * 
-	 * @param subChannel
+	 * @param channel
 	 * @param message
 	 */
 	private UUID sendMessage(RedisSubChannel channel, String message) {
 		final UUID uuid = UUID.randomUUID();
-		Bukkit.getScheduler().runTaskAsynchronously(this.plugin, () -> {
-			try (Jedis jedis = this.client.getPool()) {
-				this.sendingUUID.add(uuid);
+		this.sendingUUID.add(uuid);
 
-				String jMessage = channel.name() + this.SEPARATOR + uuid.toString();
-				if (message != null) {
-					jMessage += this.SEPARATOR + message;
-				}
+		final String jMessage;
+		if (message != null) {
+			jMessage = channel.name() + SEPARATOR + uuid + SEPARATOR + message;
+		} else {
+			jMessage = channel.name() + SEPARATOR + uuid;
+		}
 
-				jedis.publish(Config.redisChannel, jMessage);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		});
+		if (Bukkit.isPrimaryThread()) {
+			Bukkit.getScheduler().runTaskAsynchronously(this.plugin, () -> sendMessage(jMessage));
+		} else {
+			sendMessage(jMessage);
+		}
 		return uuid;
+	}
+
+	private void sendMessage(String message) {
+		try (Jedis jedis = this.client.getResource()) {
+			jedis.publish(Config.redisChannel, message);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**
 	 * Allows to stop the thread
 	 */
 	public void stop() {
-		this.threadMessaging1.interrupt();
-		this.unsubscribe(Config.redisChannel);
+		enabled = false;
+		if (client.getPool() != null && client.getResource().getClient() != null) {
+			this.unsubscribe(Config.redisChannel);
+			if (!client.getPool().isClosed()) {
+				client.getPool().close();
+			}
+		}
+		if (threadMessaging1 != null) {
+			threadMessaging1.interrupt();
+		}
 	}
 
 	/**
 	 * Allows you to send a message
 	 * 
-	 * @param subChannel
+	 * @param channel
 	 */
 	private UUID sendMessage(RedisSubChannel channel) {
 		return this.sendMessage(channel, null);
