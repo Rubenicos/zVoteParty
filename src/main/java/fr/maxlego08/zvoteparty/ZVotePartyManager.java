@@ -111,23 +111,25 @@ public class ZVotePartyManager extends YamlUtils implements VotePartyManager {
 	@Override
 	public void vote(String username, String serviceName, boolean updateVoteParty) {
 
-		OfflinePlayer offlinePlayer = Bukkit.getPlayerExact(username);
+		Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+			OfflinePlayer offlinePlayer = Bukkit.getPlayerExact(username);
 
-		if(offlinePlayer == null) {
-			offlinePlayer = Bukkit.getOfflinePlayer(username);
-		}
+			if (offlinePlayer == null) {
+				offlinePlayer = Bukkit.getOfflinePlayer(username);
+			}
 
-		this.handleVoteParty();
+			this.handleVoteParty();
 
-		if (offlinePlayer != null) {
+			if (offlinePlayer != null) {
 
-			this.vote(offlinePlayer, serviceName);
+				this.vote(offlinePlayer, serviceName);
 
-		} else {
-			// If the player cannot be found we will call redis
-			IStorage iStorage = this.plugin.getIStorage();
-			iStorage.performCustomVoteAction(username, serviceName, null);
-		}
+			} else {
+				// If the player cannot be found we will call redis
+				IStorage iStorage = this.plugin.getIStorage();
+				iStorage.performCustomVoteAction(username, serviceName, null);
+			}
+		});
 
 	}
 
@@ -234,12 +236,13 @@ public class ZVotePartyManager extends YamlUtils implements VotePartyManager {
 		this.plugin.get(player, playerVote -> {
 			List<Vote> votes = playerVote.getNeedRewardVotes();
 			if (votes.size() > 0) {
-				schedule(Config.joinGiveVoteMilliSecond, () -> {
-					message(player, Message.VOTE_LATER, "%amount%", votes.size());
-					votes.forEach(e -> e.giveReward(this.plugin, player));
-				});
 				IStorage iStorage = this.plugin.getIStorage();
-				iStorage.updateRewards(player.getUniqueId());
+				iStorage.updateRewards(player.getUniqueId(), () -> {
+					schedule(Config.joinGiveVoteMilliSecond, () -> {
+						message(player, Message.VOTE_LATER, "%amount%", votes.size());
+						votes.forEach(e -> e.giveReward(this.plugin, player));
+					});
+				});
 			}
 		}, true);
 

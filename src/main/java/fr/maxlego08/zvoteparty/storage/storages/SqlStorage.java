@@ -188,8 +188,8 @@ public class SqlStorage extends ZUtils implements IStorage {
 	}
 
 	@Override
-	public void updateRewards(UUID uniqueId) {
-		this.iConnection.updateRewards(uniqueId);
+	public void updateRewards(UUID uniqueId, Runnable callback) {
+		this.iConnection.updateRewards(uniqueId, callback);
 	}
 
 	@Override

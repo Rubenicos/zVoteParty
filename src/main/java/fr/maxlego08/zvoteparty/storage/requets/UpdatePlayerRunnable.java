@@ -15,16 +15,18 @@ public class UpdatePlayerRunnable extends ZUtils implements Runnable {
 
 	private final IConnection iConnection;
 	private final UUID uniqueId;
+	private final Runnable callback;
 	private int tryAmount = 0;
 
 	/**
 	 * @param connection
 	 * @param playerVote
 	 */
-	public UpdatePlayerRunnable(IConnection connection, UUID uniqueId) {
+	public UpdatePlayerRunnable(IConnection connection, UUID uniqueId, Runnable callback) {
 		super();
 		this.iConnection = connection;
 		this.uniqueId = uniqueId;
+		this.callback = callback;
 	}
 
 	@Override
@@ -48,6 +50,11 @@ public class UpdatePlayerRunnable extends ZUtils implements Runnable {
 			}
 
 			statement.close();
+			try {
+				callback.run();
+			} catch (Throwable t) {
+				t.printStackTrace();
+			}
 
 		} catch (SQLException e) {
 			this.tryAmount++;

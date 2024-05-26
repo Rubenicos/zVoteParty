@@ -70,7 +70,7 @@ public interface IStorage extends PlayerManager, Saveable {
 	 * 
 	 * @param uniqueId
 	 */
-	void updateRewards(UUID uniqueId);
+	void updateRewards(UUID uniqueId, Runnable callback);
 
 	/**
 	 * 

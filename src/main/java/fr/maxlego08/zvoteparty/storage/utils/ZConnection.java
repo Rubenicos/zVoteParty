@@ -144,9 +144,9 @@ public class ZConnection implements IConnection {
 	}
 
 	@Override
-	public void updateRewards(UUID uniqueId) {
+	public void updateRewards(UUID uniqueId, Runnable callback) {
 		this.getAndRefreshConnection(() -> {
-			Thread thread = new Thread(new UpdatePlayerRunnable(this, uniqueId));
+			Thread thread = new Thread(new UpdatePlayerRunnable(this, uniqueId, callback));
 			thread.start();
 		});
 	}
