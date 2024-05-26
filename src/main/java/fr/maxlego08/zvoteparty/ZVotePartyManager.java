@@ -46,6 +46,8 @@ public class ZVotePartyManager extends YamlUtils implements VotePartyManager {
 	private List<String> commands = new ArrayList<>();
 	private long needVote = 50;
 
+	private transient boolean running = false;
+
 	/**
 	 * @param plugin
 	 */
@@ -344,11 +346,18 @@ public class ZVotePartyManager extends YamlUtils implements VotePartyManager {
 
 	@Override
 	public void start() {
-
-		IStorage iStorage = this.plugin.getIStorage();
-		iStorage.startVoteParty();
-		this.secretStart();
-
+		if (running) {
+			return;
+		}
+		running = true;
+		try {
+			IStorage iStorage = this.plugin.getIStorage();
+			iStorage.startVoteParty();
+			this.secretStart();
+		} catch (Throwable t) {
+			t.printStackTrace();
+		}
+		running = false;
 	}
 
 	@Override
