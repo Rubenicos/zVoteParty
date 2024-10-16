@@ -21,6 +21,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.cryptomorin.xseries.XEnchantment;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -1077,7 +1078,7 @@ public abstract class ZUtils extends MessageUtils {
 	 */
 	public void glow(ItemStack itemStack) {
 		ItemMeta itemMeta = itemStack.getItemMeta();
-		itemMeta.addEnchant(Enchantment.ARROW_DAMAGE, 1, true);
+		itemMeta.addEnchant(XEnchantment.POWER.getEnchant(), 1, true);
 		if (NMSUtils.getNMSVersion() != 1.7)
 			itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
 		itemStack.setItemMeta(itemMeta);

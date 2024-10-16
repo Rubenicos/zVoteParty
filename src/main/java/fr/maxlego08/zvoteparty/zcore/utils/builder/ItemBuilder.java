@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.cryptomorin.xseries.XEnchantment;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
@@ -229,7 +230,7 @@ public class ItemBuilder extends ZUtils implements Cloneable {
 	 * @return
 	 */
 	public ItemBuilder glow() {
-		addEnchant(material != Material.BOW ? Enchantment.ARROW_INFINITE : Enchantment.LUCK, 10);
+		addEnchant(material != Material.BOW ? XEnchantment.INFINITY.getEnchant() : XEnchantment.LUCK_OF_THE_SEA.getEnchant(), 10);
 		setFlag(ItemFlag.HIDE_ENCHANTS);
 		return this;
 	}

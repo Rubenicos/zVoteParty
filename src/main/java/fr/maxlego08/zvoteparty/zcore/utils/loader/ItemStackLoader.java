@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.cryptomorin.xseries.XEnchantment;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
@@ -98,7 +99,7 @@ public class ItemStackLoader extends ZUtils implements Loader<ItemStack> {
 
 		if (isGlowing && NMSUtils.getNMSVersion() != 1.7) {
 
-			meta.addEnchant(Enchantment.ARROW_DAMAGE, 1, true);
+			meta.addEnchant(XEnchantment.POWER.getEnchant(), 1, true);
 			meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
 
 		}
