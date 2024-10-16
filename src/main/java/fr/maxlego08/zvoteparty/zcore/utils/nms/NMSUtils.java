@@ -17,19 +17,29 @@ public class NMSUtils {
 		try {
 			String var1 = Bukkit.getServer().getClass().getPackage().getName();
 			String[] parts = var1.split("\\.");
+
+			// Ensure there are at least 4 parts (including the version part)
 			if (parts.length > 3) {
-				String[] versionParts = parts[3].split("_");
+				String versionString = parts[3];
+				String[] versionParts = versionString.split("_");
+
+				// Check that the version has at least major and minor parts
 				if (versionParts.length >= 2) {
 					String majorVersion = versionParts[0].replace("v", "");
 					String minorVersion = versionParts[1];
+
+					// Attempt to parse and return the version number
 					return version = Double.parseDouble(majorVersion + "." + minorVersion);
 				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return 0.0;
+
+		// Fallback value for unsupported or unexpected versions
+		return 1.21; // Adjust this to fit your server version if necessary
 	}
+
 
 	/**
 	 * Check if minecraft version has shulker
