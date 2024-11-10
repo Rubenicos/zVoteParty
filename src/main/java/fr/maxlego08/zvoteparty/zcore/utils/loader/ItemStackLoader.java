@@ -12,8 +12,6 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.potion.Potion;
-import org.bukkit.potion.PotionType;
 
 import fr.maxlego08.zvoteparty.exceptions.ItemEnchantException;
 import fr.maxlego08.zvoteparty.exceptions.ItemFlagException;
@@ -61,15 +59,6 @@ public class ItemStackLoader extends ZUtils implements Loader<ItemStack> {
 		if (configuration.contains(path + "url")) {
 
 			item = createSkull(configuration.getString(path + "url"));
-
-		} else if (configuration.contains(path + "potion")) {
-
-			PotionType type = PotionType.valueOf(configuration.getString(path + "potion", "REGEN").toUpperCase());
-			int level = configuration.getInt(path + "level", 1);
-			boolean splash = configuration.getBoolean(path + "splash", false);
-			boolean extended = configuration.getBoolean(path + "extended", false);
-
-			item = new Potion(type, level, splash, extended).toItemStack(amount);
 
 		}
 

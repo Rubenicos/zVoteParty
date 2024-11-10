@@ -67,4 +67,13 @@ public class ZReward extends ZUtils implements Reward {
 		return this.messages;
 	}
 
+	@Override
+	public String toString() {
+		return "ZReward{" +
+				"percent=" + percent +
+				", commands=" + commands +
+				", needToBeOnline=" + needToBeOnline +
+				", messages=" + messages +
+				'}';
+	}
 }

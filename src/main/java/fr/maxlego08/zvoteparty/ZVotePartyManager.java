@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -276,7 +277,7 @@ public class ZVotePartyManager extends YamlUtils implements VotePartyManager {
 			}
 
 		} catch (Exception e) {
-			// TODO: handle exception
+			this.plugin.getLogger().log(Level.WARNING, "Cannot load vote rewards", e);
 		}
 
 		Logger.info("Loaded " + this.rewards.size() + " rewards", LogType.SUCCESS);
@@ -300,7 +301,7 @@ public class ZVotePartyManager extends YamlUtils implements VotePartyManager {
 					}
 				}
 			} catch (Exception e) {
-				// TODO: handle exception
+				this.plugin.getLogger().log(Level.WARNING, "Cannot load party rewards", e);
 			}
 		}
 	}
