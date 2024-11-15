@@ -3,6 +3,7 @@ package fr.maxlego08.zvoteparty.implementations;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
@@ -37,6 +38,10 @@ public class ZPlayerVote extends ZUtils implements PlayerVote {
 	public ZPlayerVote(UUID uniqueId, List<Vote> votes) {
 		super();
 		this.uniqueId = uniqueId;
+		if (Config.maxVoteLifeTime > 0) {
+			final long time = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(Config.maxVoteLifeTime);
+			votes.removeIf(vote -> vote.getCreatedAt() <= time);
+		}
 		this.votes = votes;
 	}
 
